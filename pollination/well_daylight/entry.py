@@ -93,8 +93,12 @@ class WellDaylightEntryPoint(DAG):
     ):
         return [
             {
-                'from': WellAnnualDaylight()._outputs.well_summary,
-                'to': 'well_summary'
+                'from': WellAnnualDaylight()._outputs.l01_well_summary,
+                'to': 'l01_well_summary'
+            },
+            {
+                'from': WellAnnualDaylight()._outputs.l06_well_summary,
+                'to': 'l06_well_summary'
             }
         ]
 
@@ -103,11 +107,20 @@ class WellDaylightEntryPoint(DAG):
         'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
 
-    well_folder = Outputs.folder(
-        source='well_summary', description='WELL summary folder.'
+    l01_well_folder = Outputs.folder(
+        source='l01_well_summary', description='WELL summary folder.'
     )
 
-    summary = Outputs.file(
+    l01_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
-        source='well_summary/summary.json',
+        source='l01_well_summary/summary.json',
+    )
+
+    l06_well_folder = Outputs.folder(
+        source='l06_well_summary', description='WELL summary folder.'
+    )
+
+    l06_summary = Outputs.file(
+        description='JSON file containing the number of credits achieved.',
+        source='l06_well_summary/summary.json',
     )
