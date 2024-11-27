@@ -1,15 +1,17 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
+from pollination.honeybee_radiance.multiphase import AddApertureGroupBlinds
 from pollination.two_phase_daylight_coefficient import TwoPhaseDaylightCoefficientEntryPoint
 from pollination.honeybee_radiance_postprocess.well import WellAnnualDaylight
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
-from pollination.alias.inputs.wea import wea_input_timestep_check
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input
 from pollination.alias.inputs.grid import grid_filter_input, \
     min_sensor_count_input, cpu_count
+
+from ._process_epw import WellDaylightProcessEPW
 
 
 @dataclass
@@ -68,37 +70,84 @@ class WellDaylightEntryPoint(DAG):
         alias=hbjson_model_grid_input
     )
 
-    wea = Inputs.file(
-        description='Wea file.',
-        extensions=['wea', 'epw'],
-        alias=wea_input_timestep_check
+    epw = Inputs.file(
+        description='EPW file.',
+        extensions=['epw']
     )
 
+    diffuse_transmission = Inputs.float(
+        default=0.05,
+        description='Diffuse transmission of the aperture group blinds. Default '
+        'is 0.05 (5%).',
+        spec={'type': 'number', 'minimum': 0.0001, 'maximum': 1}
+    )
+
+    specular_transmission = Inputs.float(
+        default=0.0001,
+        description='Specular transmission of the aperture group blinds. Default '
+        'is 0 (0%).',
+        spec={'type': 'number', 'minimum': 0.0001, 'maximum': 1}
+    )
+
+    @task(template=WellDaylightProcessEPW)
+    def well_daylight_process_epw(
+        self, epw=epw
+    ):
+        return [
+            {
+                'from': WellDaylightProcessEPW()._outputs.wea,
+                'to': 'wea.wea'
+            },
+            {
+                'from': WellDaylightProcessEPW()._outputs.daylight_hours,
+                'to': 'daylight_hours.csv'
+            }
+        ]
+
+    @task(template=AddApertureGroupBlinds)
+    def add_aperture_group_blinds(
+        self, model=model, diffuse_transmission=diffuse_transmission,
+        specular_transmission=specular_transmission
+    ):
+        return [
+            {
+                'from': AddApertureGroupBlinds()._outputs.output_model,
+                'to': 'model_blinds.hbjson'
+            }
+        ]
+
     @task(
-        template=TwoPhaseDaylightCoefficientEntryPoint
+        template=TwoPhaseDaylightCoefficientEntryPoint,
+        needs=[well_daylight_process_epw, add_aperture_group_blinds]
     )
     def run_two_phase_daylight_coefficient(
             self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
             radiance_parameters=radiance_parameters, grid_filter=grid_filter,
-            model=model, wea=wea
+            model=add_aperture_group_blinds._outputs.output_model,
+            wea=well_daylight_process_epw._outputs.wea
     ):
         pass
 
     @task(
         template=WellAnnualDaylight,
-        needs=[run_two_phase_daylight_coefficient]
+        needs=[well_daylight_process_epw, run_two_phase_daylight_coefficient]
     )
     def well_annual_daylight(
-        self, folder='results', model=model
+        self, folder='results', model=model,
+        daylight_hours=well_daylight_process_epw._outputs.daylight_hours,
     ):
         return [
             {
+                'from': WellAnnualDaylight()._outputs.well_summary_folder,
+                'to': 'well_summary'
+            },
+            {
                 'from': WellAnnualDaylight()._outputs.l01_well_summary,
-                'to': 'l01_well_summary'
+                'to': 'l01_well_summary.json'
             },
             {
                 'from': WellAnnualDaylight()._outputs.l06_well_summary,
-                'to': 'l06_well_summary'
+                'to': 'l06_well_summary.json'
             }
         ]
 
@@ -107,20 +156,12 @@ class WellDaylightEntryPoint(DAG):
         'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
 
-    l01_well_folder = Outputs.folder(
-        source='l01_well_summary', description='WELL summary folder.'
-    )
-
     l01_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
-        source='l01_well_summary/summary.json',
-    )
-
-    l06_well_folder = Outputs.folder(
-        source='l06_well_summary', description='WELL summary folder.'
+        source='l01_well_summary.json',
     )
 
     l06_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
-        source='l06_well_summary/summary.json',
+        source='l06_well_summary.json',
     )
