@@ -12,6 +12,7 @@ from pollination.alias.inputs.grid import grid_filter_input, \
     min_sensor_count_input, cpu_count
 
 from ._process_epw import WellDaylightProcessEPW
+from ._visualization import WellDaylightVisualization
 
 
 @dataclass
@@ -150,6 +151,30 @@ class WellDaylightEntryPoint(DAG):
                 'to': 'l06_well_summary.json'
             }
         ]
+
+    @task(
+        template=WellDaylightVisualization,
+        needs=[run_two_phase_daylight_coefficient, well_annual_daylight],
+        sub_paths={
+            'l01_pass_fail': 'ies_lm/pass_fail/L01',
+            'l06_pass_fail': 'ies_lm/pass_fail/L06'
+        }
+    )
+    def create_visualization(
+        self, model=model, l01_pass_fail=well_annual_daylight._outputs.well_summary_folder,
+        l06_pass_fail=well_annual_daylight._outputs.well_summary_folder
+    ):
+        return [
+            {
+                'from': WellDaylightVisualization()._outputs.visualization,
+                'to': 'visualization.vsf'
+            }
+        ]
+
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Visualization in VisualizationSet format.'
+    )
 
     results = Outputs.folder(
         source='results', description='Folder with raw result files (.ill) that '
