@@ -10,6 +10,7 @@ from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input
 from pollination.alias.inputs.grid import grid_filter_input, \
     min_sensor_count_input, cpu_count
+from pollination.alias.outputs.daylight import well_l01_summary, well_l06_summary
 
 from ._process_epw import WellDaylightProcessEPW
 from ._visualization import WellDaylightVisualization
@@ -183,10 +184,10 @@ class WellDaylightEntryPoint(DAG):
 
     l01_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
-        source='l01_well_summary.json',
+        source='l01_well_summary.json', alias=well_l01_summary
     )
 
     l06_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
-        source='l06_well_summary.json',
+        source='l06_well_summary.json', alias=well_l06_summary
     )
