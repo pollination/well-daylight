@@ -5,11 +5,10 @@ from pollination.two_phase_daylight_coefficient import TwoPhaseDaylightCoefficie
 from pollination.honeybee_radiance_postprocess.well import WellAnnualDaylight
 
 # input/output alias
-from pollination.alias.inputs.model import hbjson_model_grid_input
+from pollination.alias.inputs.model import hbjson_model_room_input
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input
-from pollination.alias.inputs.grid import grid_filter_input, \
-    min_sensor_count_input, cpu_count
+from pollination.alias.inputs.grid import grid_filter_input, cpu_count
 from pollination.alias.outputs.daylight import well_l01_summary, well_l06_summary
 
 from ._process_epw import WellDaylightProcessEPW
@@ -43,10 +42,9 @@ class WellDaylightEntryPoint(DAG):
         'redistributing the sensors based on cpu_count. This value takes '
         'precedence over the cpu_count and can be used to ensure that '
         'the parallelization does not result in generating unnecessarily small '
-        'sensor grids. The default value is set to 1, which means that the '
-        'cpu_count is always respected.', default=500,
-        spec={'type': 'integer', 'minimum': 1},
-        alias=min_sensor_count_input
+        'sensor grids.',
+        default=1000, default_local=500,
+        spec={'type': 'integer', 'minimum': 1}
     )
 
     radiance_parameters = Inputs.str(
@@ -69,7 +67,7 @@ class WellDaylightEntryPoint(DAG):
         'This can also be a zipped version of a Radiance folder, in which case this '
         'recipe will simply unzip the file and simulate it as-is.',
         extensions=['json', 'hbjson', 'pkl', 'hbpkl', 'zip'],
-        alias=hbjson_model_grid_input
+        alias=hbjson_model_room_input
     )
 
     epw = Inputs.file(
@@ -114,7 +112,7 @@ class WellDaylightEntryPoint(DAG):
         return [
             {
                 'from': AddApertureGroupBlinds()._outputs.output_model,
-                'to': 'model_blinds.hbjson'
+                'to': 'output_model.hbjson'
             }
         ]
 
@@ -171,6 +169,10 @@ class WellDaylightEntryPoint(DAG):
                 'to': 'visualization.vsf'
             }
         ]
+
+    output_model = Outputs.file(
+        source='output_model.hbjson', description='Model with blinds.'
+    )
 
     visualization = Outputs.file(
         source='visualization.vsf',
