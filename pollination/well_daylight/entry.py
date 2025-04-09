@@ -124,7 +124,8 @@ class WellDaylightEntryPoint(DAG):
             self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
             radiance_parameters=radiance_parameters, grid_filter=grid_filter,
             model=add_aperture_group_blinds._outputs.output_model,
-            wea=well_daylight_process_epw._outputs.wea
+            wea=well_daylight_process_epw._outputs.wea,
+            dtype='float16'
     ):
         pass
 
