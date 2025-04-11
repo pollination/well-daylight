@@ -9,7 +9,7 @@ from pollination.alias.inputs.model import hbjson_model_room_input
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input
 from pollination.alias.inputs.grid import grid_filter_input, cpu_count
-from pollination.alias.outputs.daylight import well_l01_summary, well_l06_summary
+from pollination.alias.outputs.daylight import well_l01_summary, well_l06_summary, leed_one_shade_transmittance_results
 
 from ._process_epw import WellDaylightProcessEPW
 from ._visualization import WellDaylightVisualization
@@ -193,4 +193,10 @@ class WellDaylightEntryPoint(DAG):
     l06_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
         source='l06_well_summary.json', alias=well_l06_summary
+    )
+
+    dynamic_schedule = Outputs.file(
+        description='JSON file containing the dynamic schedules.',
+        source='well_summary/ies_lm/l06_ies_lm_summary/states_schedule.json',
+        alias=leed_one_shade_transmittance_results
     )
