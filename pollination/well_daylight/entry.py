@@ -195,6 +195,12 @@ class WellDaylightEntryPoint(DAG):
         source='l06_well_summary.json', alias=well_l06_summary
     )
 
+    well_version = Outputs.file(
+        description='JSON file containing the WELL version used for the analysis '
+        'and the criteria for L01 and L06.',
+        source='well_version.json'
+    )
+
     dynamic_schedule = Outputs.file(
         description='JSON file containing the dynamic schedules.',
         source='well_summary/ies_lm/l06_ies_lm_summary/states_schedule.json',
