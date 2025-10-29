@@ -153,7 +153,7 @@ class WellDaylightEntryPoint(DAG):
         }
     )
     def create_visualization(
-        self, model=model, l01_pass_fail=well_annual_daylight._outputs.well_summary_folder,
+        self, model='output_model.hbjson', l01_pass_fail=well_annual_daylight._outputs.well_summary_folder,
         l06_pass_fail=well_annual_daylight._outputs.well_summary_folder
     ):
         return [
