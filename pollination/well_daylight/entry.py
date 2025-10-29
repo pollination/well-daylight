@@ -134,7 +134,7 @@ class WellDaylightEntryPoint(DAG):
         needs=[well_daylight_process_epw, run_two_phase_daylight_coefficient]
     )
     def well_annual_daylight(
-        self, folder='results', model=model,
+        self, folder='results', model='output_model.hbjson',
         daylight_hours=well_daylight_process_epw._outputs.daylight_hours,
     ):
         return [
