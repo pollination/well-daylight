@@ -141,14 +141,6 @@ class WellDaylightEntryPoint(DAG):
             {
                 'from': WellAnnualDaylight()._outputs.well_summary_folder,
                 'to': 'well_summary'
-            },
-            {
-                'from': WellAnnualDaylight()._outputs.l01_well_summary,
-                'to': 'l01_well_summary.json'
-            },
-            {
-                'from': WellAnnualDaylight()._outputs.l06_well_summary,
-                'to': 'l06_well_summary.json'
             }
         ]
 
@@ -187,18 +179,18 @@ class WellDaylightEntryPoint(DAG):
 
     l01_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
-        source='l01_well_summary.json', alias=well_l01_summary
+        source='well_summary/l01_well_summary.json', alias=well_l01_summary
     )
 
     l06_summary = Outputs.file(
         description='JSON file containing the number of credits achieved.',
-        source='l06_well_summary.json', alias=well_l06_summary
+        source='well_summary/l06_well_summary.json', alias=well_l06_summary
     )
 
     well_version = Outputs.file(
         description='JSON file containing the WELL version used for the analysis '
         'and the criteria for L01 and L06.',
-        source='well_version.json'
+        source='well_summary/well_version.json'
     )
 
     dynamic_schedule = Outputs.file(
