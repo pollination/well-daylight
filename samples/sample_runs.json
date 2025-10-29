@@ -1,0 +1,16 @@
+[
+    {
+        "artifacts": {
+            "model": "artifacts/sample_model_grid.hbjson",
+            "wea": "artifacts/USA_MA_Boston-Logan.Intl.AP.725090_TMY3.epw"
+        },
+        "inputs": {}
+    },
+    {
+        "artifacts": {
+            "model": "artifacts/sample_model_grid_aperture_groups.hbjson",
+            "wea": "artifacts/USA_MA_Boston-Logan.Intl.AP.725090_TMY3.epw"
+        },
+        "inputs": {}
+    }
+]

@@ -48,7 +48,7 @@ jobs:
       - name: set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.12'
       - name: Set Tag
         id: set-tag
         run: |
@@ -63,6 +63,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+      - name: install python dependencies for samples
+        run: pip install -r samples/requirements.txt
+      - name: run on staging
+        run: python samples/run_jobs.py
+        env:
+          QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+          TAG: ${{ steps.set-tag.outputs.tag }}
+          HOST: https://api.staging.pollination.solutions
 
   deploy-to-production:
     name: Deploy to Pollination Production
