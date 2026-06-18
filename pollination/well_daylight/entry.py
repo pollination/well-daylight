@@ -1,17 +1,18 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
 from pollination.honeybee_radiance.multiphase import AddApertureGroupBlinds
+from pollination.honeybee_radiance.schedule import EPWtoDaylightHours
 from pollination.two_phase_daylight_coefficient import TwoPhaseDaylightCoefficientEntryPoint
 from pollination.honeybee_radiance_postprocess.well import WellAnnualDaylight
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_room_input
+from pollination.alias.inputs.wea import epw_input_timestep_annual_check
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input
 from pollination.alias.inputs.grid import grid_filter_input, cpu_count
 from pollination.alias.outputs.daylight import well_l01_summary, well_l06_summary, leed_one_shade_transmittance_results
 
-from ._process_epw import WellDaylightProcessEPW
 from ._visualization import WellDaylightVisualization
 
 
@@ -71,8 +72,10 @@ class WellDaylightEntryPoint(DAG):
     )
 
     epw = Inputs.file(
-        description='EPW file.',
-        extensions=['epw']
+        description='EPW or Wea file. This must be an hourly weather file with annual '
+        'data.',
+        extensions=['epw', 'wea'],
+        alias=epw_input_timestep_annual_check
     )
 
     diffuse_transmission = Inputs.float(
@@ -89,18 +92,22 @@ class WellDaylightEntryPoint(DAG):
         spec={'type': 'number', 'minimum': 0.0001, 'maximum': 1}
     )
 
-    @task(template=WellDaylightProcessEPW)
-    def well_daylight_process_epw(
+    @task(template=EPWtoDaylightHours)
+    def create_daylight_hours(
         self, epw=epw
     ):
         return [
             {
-                'from': WellDaylightProcessEPW()._outputs.wea,
-                'to': 'wea.wea'
+                'from': EPWtoDaylightHours()._outputs.daylight_hours_csv,
+                'to': 'daylight_hours.csv'
             },
             {
-                'from': WellDaylightProcessEPW()._outputs.daylight_hours,
-                'to': 'daylight_hours.csv'
+                'from': EPWtoDaylightHours()._outputs.daylight_hours_json,
+                'to': 'daylight_hours.json'
+            },
+            {
+                'from': EPWtoDaylightHours()._outputs.daylight_hours_wea,
+                'to': 'wea.wea'
             }
         ]
 
@@ -118,24 +125,24 @@ class WellDaylightEntryPoint(DAG):
 
     @task(
         template=TwoPhaseDaylightCoefficientEntryPoint,
-        needs=[well_daylight_process_epw, add_aperture_group_blinds]
+        needs=[create_daylight_hours, add_aperture_group_blinds]
     )
     def run_two_phase_daylight_coefficient(
             self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
             radiance_parameters=radiance_parameters, grid_filter=grid_filter,
             model=add_aperture_group_blinds._outputs.output_model,
-            wea=well_daylight_process_epw._outputs.wea,
+            wea=create_daylight_hours._outputs.daylight_hours_wea,
             dtype='float16'
     ):
         pass
 
     @task(
         template=WellAnnualDaylight,
-        needs=[well_daylight_process_epw, run_two_phase_daylight_coefficient]
+        needs=[create_daylight_hours, run_two_phase_daylight_coefficient]
     )
     def well_annual_daylight(
         self, folder='results', model='output_model.hbjson',
-        daylight_hours=well_daylight_process_epw._outputs.daylight_hours,
+        daylight_hours=create_daylight_hours._outputs.daylight_hours_csv,
     ):
         return [
             {
