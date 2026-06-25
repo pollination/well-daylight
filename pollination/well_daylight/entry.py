@@ -11,7 +11,8 @@ from pollination.alias.inputs.wea import epw_input_timestep_annual_check
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input
 from pollination.alias.inputs.grid import grid_filter_input, cpu_count
-from pollination.alias.outputs.daylight import well_l01_summary, well_l06_summary, leed_one_shade_transmittance_results
+from pollination.alias.outputs.daylight import well_l01_summary, well_l06_summary, \
+    leed_one_shade_transmittance_results, daylight_hours
 
 from ._visualization import WellDaylightVisualization
 
@@ -204,4 +205,9 @@ class WellDaylightEntryPoint(DAG):
         description='JSON file containing the dynamic schedules.',
         source='well_summary/ies_lm/l06_ies_lm_summary/states_schedule.json',
         alias=leed_one_shade_transmittance_results
+    )
+
+    daylight_hours = Outputs.file(
+        source='daylight_hours.json', description='Daylight hours occupancy schedule.',
+        alias=daylight_hours
     )
